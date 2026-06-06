@@ -1,0 +1,37 @@
+# ── Broker / market data ──────────────────────────────────────────────
+kiteconnect>=5.0.1
+
+# ── Core data / math ──────────────────────────────────────────────────
+pandas>=2.2
+numpy>=1.26
+pandas_ta>=0.3.14b0
+# TA-Lib needs the underlying C library installed FIRST:
+#   Ubuntu/Debian: sudo apt-get install -y ta-lib   (or build from source)
+#   then:          pip install TA-Lib
+# It is only imported in the indicators/patterns phase (Phase 3), so the
+# scaffold (config, db, logging) runs without it.
+TA-Lib>=0.4.28
+
+# ── Config / infra ────────────────────────────────────────────────────
+PyYAML>=6.0
+python-dotenv>=1.0
+pydantic>=2.6
+pydantic-settings>=2.2
+SQLAlchemy>=2.0
+APScheduler>=3.10
+rich>=13.7
+
+# ── Macro data (free sources) ─────────────────────────────────────────
+yfinance>=0.2.40
+feedparser>=6.0
+requests>=2.31
+beautifulsoup4>=4.12
+
+# ── LLM providers (free-first + paid fallback) ────────────────────────
+anthropic>=0.40            # paid fallback (Haiku → Sonnet)
+groq>=0.11                 # free tier (Llama 3.x)
+google-genai>=0.3          # Gemini free tier
+openai>=1.40               # drives Groq & OpenRouter (OpenAI-compatible)
+
+# ── Testing ───────────────────────────────────────────────────────────
+pytest>=8.0

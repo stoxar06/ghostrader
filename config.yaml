@@ -1,0 +1,92 @@
+# Ghostrader configuration. Secrets live in .env, NOT here.
+# This file holds non-secret, tunable parameters.
+
+mode: paper                 # backtest | paper | live   (live is gated)
+
+# ── Instruments (Equity Intraday first) ───────────────────────────────
+instruments:
+  exchange: NSE
+  # Start with a small basket of liquid names; expand only after validation.
+  symbols: [RELIANCE, HDFCBANK, ICICIBANK, INFY, TCS]
+  base_timeframe: 5minute
+  higher_timeframes: [15minute, 60minute]
+
+# ── Session timing (IST) ──────────────────────────────────────────────
+session:
+  market_open: "09:15"
+  market_close: "15:30"
+  square_off: "15:15"       # force-close intraday positions before close
+  respect_nse_holidays: true
+
+# ── Strategy (start LEAN; add more only after out-of-sample proof) ─────
+strategy:
+  enabled_signals:
+    trend: [ema_cross, supertrend]
+    volume: [vwap]
+    candlesticks: [engulfing, hammer]
+    momentum: []            # add after validation
+    volatility: [atr]       # ATR always used for stops
+  confidence_threshold: 0.6
+  require_higher_tf_agreement: true
+  indicator_params:
+    ema_fast: 9
+    ema_slow: 21
+    rsi_period: 14
+    atr_period: 14
+    bb_period: 20
+    supertrend_period: 10
+    supertrend_multiplier: 3.0
+
+# ── Risk ──────────────────────────────────────────────────────────────
+risk:
+  capital: 100000           # paper capital; set REAL capital before live
+  risk_per_trade_pct: 0.5   # % of capital risked per trade (fixed-fractional)
+  target_pct: 1.5           # gross target so ~1% nets after costs
+  atr_stop_multiplier: 1.5
+  reward_risk_min: 1.5
+  trailing_atr_multiplier: 2.0
+  daily_loss_halt_pct: 1.0  # stop opening trades after this account drawdown
+  max_concurrent_positions: 3
+  max_trades_per_day: 10
+  per_instrument_exposure_pct: 30
+
+# ── Costs (Zerodha intraday equity; subtracted in backtest & paper) ────
+costs:
+  brokerage_per_order: 20       # ₹ or 0.03% whichever is lower
+  brokerage_pct: 0.0003
+  stt_sell_pct: 0.00025
+  exchange_txn_pct: 0.0000297
+  gst_pct: 0.18                 # on (brokerage + txn + sebi)
+  sebi_per_crore: 10
+  stamp_buy_pct: 0.00003
+  slippage_pct: 0.0005          # assumed per side
+
+# ── Macro / sentiment engine ──────────────────────────────────────────
+macro:
+  enabled: true
+  refresh_minutes: 20
+  influence: soft_bias          # soft_bias | hard_veto
+  data_sources: free            # free | paid
+
+# ── LLM (free-first multi-provider; secrets in .env) ──────────────────
+llm:
+  provider_order: [groq, gemini, openrouter, anthropic]   # anthropic = paid fallback
+  daily_paid_cap_inr: 40        # halt paid calls beyond this → deterministic fallback
+  max_output_tokens: 512
+  classify_model:               # cheap/fast tier for per-headline tagging
+    groq: llama-3.1-8b-instant
+    gemini: gemini-2.0-flash
+    openrouter: "meta-llama/llama-3.1-8b-instruct:free"
+    anthropic: claude-haiku-4-5
+  synthesis_model:              # stronger tier for regime synthesis
+    groq: llama-3.3-70b-versatile
+    gemini: gemini-2.0-flash
+    openrouter: "meta-llama/llama-3.3-70b-instruct:free"
+    anthropic: claude-sonnet-4-6
+
+# ── Storage / logging ─────────────────────────────────────────────────
+storage:
+  db_path: data/ghostrader.db
+logging:
+  level: INFO
+  file: logs/ghostrader.log
