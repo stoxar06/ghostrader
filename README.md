@@ -42,7 +42,8 @@ python -m src.backtest.walkforward        # walk-forward out-of-sample gate
 python -m src.backtest.research           # multi-strategy sweep vs buy-and-hold
 
 # Analyst tool (free data; LLM optional):
-python -m src.macro.brief                 # daily market briefing
+python -m src.macro.brief                 # one-off daily market briefing
+python -m src.scheduler                   # auto briefing pre-market + intraday (+Telegram)
 python -m src.mcp.server                  # MCP server (for Claude Desktop etc.)
 ```
 
