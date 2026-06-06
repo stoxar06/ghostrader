@@ -90,7 +90,10 @@ def analyze(
     entered = confidence >= threshold
 
     if require_htf and htf_df is not None:
-        htf_dir = mtf.align_to_base(mtf.htf_trend(htf_df, params), base_df.index)
+        # Shift the HTF trend by one higher-TF bar so a base-bar decision uses the
+        # last *completed* higher-TF bar (the in-progress bar's close isn't known yet).
+        htf_trend = mtf.htf_trend(htf_df, params).shift(1)
+        htf_dir = mtf.align_to_base(htf_trend, base_df.index)
         entered = entered & (direction == htf_dir) & (direction != 0)
 
     out = pd.DataFrame(
