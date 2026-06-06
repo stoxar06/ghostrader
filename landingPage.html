@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ghostrader — Market Analyst &amp; Research Toolkit</title>
+<meta name="description" content="An honest market-analyst & research toolkit for Indian equities (Zerodha Kite). It rigorously tested algo-trading, proved there is no edge vs buy-and-hold, and became a useful analysis tool instead." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#F0EEE6;          /* Anthropic ivory */
+    --surface:#FBFAF6;     /* card cream */
+    --surface-2:#F5F2EA;   /* alt surface */
+    --ink:#141413;         /* near-black */
+    --ink-2:#403E38;       /* body text */
+    --muted:#76736A;       /* muted */
+    --clay:#CC785C;        /* signature accent */
+    --clay-700:#B0573C;    /* accent hover */
+    --clay-100:#F2E2DA;    /* accent tint */
+    --line:#E4E0D4;        /* hairline border */
+    --panel:#1E1D1B;       /* dark code/nav panel */
+    --panel-ink:#EDEAE0;   /* text on panel */
+    --good:#4F7A5B;        /* positive */
+    --bad:#B0573C;         /* negative */
+    --serif:"Newsreader",Georgia,"Times New Roman",serif;
+    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+    --maxw:1080px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;scroll-padding-top:84px;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink-2);
+    font-family:var(--sans);font-size:17px;line-height:1.65;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  h1,h2,h3,h4{font-family:var(--serif);color:var(--ink);font-weight:500;line-height:1.15;letter-spacing:-.01em;margin:0 0 .4em;}
+  h1{font-size:clamp(2.5rem,6vw,4.2rem);font-weight:500;}
+  h2{font-size:clamp(1.9rem,3.6vw,2.7rem);}
+  h3{font-size:1.35rem;}
+  p{margin:0 0 1rem;}
+  a{color:var(--clay-700);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px;}
+  .eyebrow{font-family:var(--sans);font-size:.78rem;font-weight:600;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--clay-700);margin-bottom:14px;}
+  .lead{font-size:1.18rem;color:var(--ink-2);max-width:62ch;}
+  .muted{color:var(--muted);}
+  .accent{color:var(--clay-700);}
+
+  /* NAV */
+  header.nav{position:sticky;top:0;z-index:50;background:rgba(240,238,230,.82);
+    backdrop-filter:saturate(140%) blur(10px);border-bottom:1px solid var(--line);}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:64px;}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--serif);font-size:1.25rem;
+    font-weight:600;color:var(--ink);}
+  .brand .dot{width:13px;height:13px;border-radius:50%;background:var(--clay);
+    box-shadow:0 0 0 4px var(--clay-100);}
+  nav.links{display:flex;gap:28px;align-items:center;}
+  nav.links a{font-family:var(--sans);font-size:.95rem;color:var(--ink-2);font-weight:500;}
+  nav.links a:hover{color:var(--clay-700);text-decoration:none;}
+  .btn{display:inline-block;font-family:var(--sans);font-weight:600;font-size:.95rem;
+    padding:11px 20px;border-radius:999px;border:1px solid transparent;cursor:pointer;transition:.15s;}
+  .btn-primary{background:var(--clay);color:#fff;}
+  .btn-primary:hover{background:var(--clay-700);text-decoration:none;}
+  .btn-ghost{background:transparent;border-color:var(--ink);color:var(--ink);}
+  .btn-ghost:hover{background:var(--ink);color:var(--bg);text-decoration:none;}
+  .menu-btn{display:none;background:none;border:0;font-size:1.5rem;color:var(--ink);cursor:pointer;}
+
+  /* HERO */
+  .hero{padding:84px 0 56px;}
+  .hero .tag{display:inline-flex;align-items:center;gap:8px;background:var(--clay-100);
+    color:var(--clay-700);font-size:.82rem;font-weight:600;padding:6px 14px;border-radius:999px;margin-bottom:26px;}
+  .hero h1 .u{background:linear-gradient(transparent 64%,var(--clay-100) 64%);}
+  .hero .lead{margin-top:8px;}
+  .cta{display:flex;gap:14px;flex-wrap:wrap;margin-top:30px;}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:54px;}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px 20px;}
+  .stat .n{font-family:var(--serif);font-size:2rem;color:var(--ink);line-height:1;}
+  .stat .l{font-size:.85rem;color:var(--muted);margin-top:8px;}
+
+  /* SECTIONS */
+  section{padding:70px 0;border-top:1px solid var(--line);}
+  section.plain{border-top:0;}
+  .section-head{max-width:64ch;margin-bottom:40px;}
+
+  /* HONEST BANNER */
+  .honest{background:var(--panel);color:var(--panel-ink);border-radius:22px;padding:40px;}
+  .honest h2{color:#fff;}
+  .honest .lead{color:#CFCBBF;}
+  .honest .row{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:26px;}
+  .honest .row div{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;padding:18px;}
+  .honest .row .k{font-family:var(--serif);font-size:1.5rem;color:#fff;}
+  .honest .row .v{font-size:.88rem;color:#B8B4A8;margin-top:6px;}
+
+  /* CARD GRID */
+  .grid{display:grid;gap:18px;}
+  .g3{grid-template-columns:repeat(3,1fr);}
+  .g2{grid-template-columns:repeat(2,1fr);}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px;}
+  .card h3{margin-bottom:.3em;}
+  .card .ico{width:40px;height:40px;border-radius:10px;background:var(--clay-100);
+    display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:16px;}
+  .card p{font-size:.97rem;margin-bottom:0;}
+
+  /* ARCHITECTURE DIAGRAM */
+  .arch{display:flex;flex-direction:column;align-items:center;gap:0;margin-top:10px;}
+  .layer{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:20px 24px;width:100%;max-width:760px;text-align:center;}
+  .layer .lt{font-family:var(--serif);font-size:1.2rem;color:var(--ink);}
+  .layer .ld{font-size:.9rem;color:var(--muted);margin-top:4px;}
+  .layer.accent-l{border-color:var(--clay);background:linear-gradient(var(--surface),var(--clay-100));}
+  .layer.dark-l{background:var(--panel);border-color:var(--panel);}
+  .layer.dark-l .lt{color:#fff;} .layer.dark-l .ld{color:#B8B4A8;}
+  .arrow{color:var(--clay);font-size:1.5rem;line-height:1;margin:10px 0;}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px;width:100%;max-width:760px;}
+  .two .layer{max-width:none;}
+  .badge{display:inline-block;font-family:var(--mono);font-size:.72rem;background:var(--surface-2);
+    border:1px solid var(--line);border-radius:6px;padding:2px 8px;margin:3px 3px 0;color:var(--ink-2);}
+  .layer.dark-l .badge{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12);color:#CFCBBF;}
+
+  /* STEPPER */
+  .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;counter-reset:s;}
+  .step{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;position:relative;}
+  .step::before{counter-increment:s;content:counter(s);font-family:var(--serif);font-size:1.1rem;
+    width:30px;height:30px;border-radius:50%;background:var(--clay);color:#fff;display:flex;
+    align-items:center;justify-content:center;margin-bottom:12px;}
+  .step h4{font-family:var(--sans);font-size:1rem;font-weight:600;color:var(--ink);margin-bottom:6px;}
+  .step p{font-size:.85rem;color:var(--muted);margin:0;}
+
+  /* TABLE */
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface);}
+  table{width:100%;border-collapse:collapse;font-size:.92rem;min-width:520px;}
+  th,td{text-align:left;padding:13px 16px;border-bottom:1px solid var(--line);}
+  th{font-family:var(--sans);font-weight:600;color:var(--ink);background:var(--surface-2);font-size:.82rem;
+    text-transform:uppercase;letter-spacing:.05em;}
+  tr:last-child td{border-bottom:0;}
+  td.pos{color:var(--good);font-weight:600;} td.neg{color:var(--bad);font-weight:600;}
+  .verdict-no{color:var(--bad);font-weight:600;} .verdict-yes{color:var(--good);font-weight:600;}
+  .mono{font-family:var(--mono);font-size:.86rem;}
+
+  /* CODE */
+  .code{position:relative;background:var(--panel);color:var(--panel-ink);border-radius:14px;
+    padding:22px 22px;font-family:var(--mono);font-size:.86rem;line-height:1.7;overflow-x:auto;margin:0 0 18px;}
+  .code .c{color:#9A968A;}   /* comment */
+  .code .k{color:#E0997E;}   /* command/keyword in clay */
+  .copy{position:absolute;top:12px;right:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);
+    color:#CFCBBF;font-family:var(--sans);font-size:.74rem;padding:5px 10px;border-radius:8px;cursor:pointer;}
+  .copy:hover{background:rgba(255,255,255,.16);}
+
+  ul.clean{list-style:none;padding:0;margin:0;}
+  ul.clean li{padding:9px 0 9px 28px;position:relative;border-bottom:1px solid var(--line);font-size:.97rem;}
+  ul.clean li:last-child{border-bottom:0;}
+  ul.clean li::before{content:"→";position:absolute;left:0;color:var(--clay);font-weight:700;}
+
+  /* FOOTER */
+  footer{background:var(--panel);color:#B8B4A8;padding:54px 0 40px;margin-top:10px;}
+  footer h3{color:#fff;}
+  footer a{color:#E0997E;}
+  .foot-row{display:flex;justify-content:space-between;gap:30px;flex-wrap:wrap;align-items:flex-start;}
+  .foot-note{font-size:.85rem;max-width:48ch;}
+  .foot-cols{display:flex;gap:54px;flex-wrap:wrap;}
+  .foot-cols div b{color:#fff;font-family:var(--sans);font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:10px;}
+  .foot-cols div a{display:block;margin-bottom:7px;font-size:.92rem;}
+  .copyline{border-top:1px solid rgba(255,255,255,.1);margin-top:40px;padding-top:20px;font-size:.82rem;color:#86837A;}
+
+  @media(max-width:860px){
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .g3,.g2,.steps,.honest .row{grid-template-columns:1fr;}
+    .steps{grid-template-columns:1fr 1fr;}
+    nav.links{display:none;}
+    .menu-btn{display:block;}
+    nav.links.open{display:flex;position:absolute;top:64px;left:0;right:0;flex-direction:column;
+      background:var(--bg);border-bottom:1px solid var(--line);padding:18px 24px;gap:16px;}
+  }
+  @media(max-width:560px){.steps{grid-template-columns:1fr;}.two{grid-template-columns:1fr;}.honest{padding:26px;}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<header class="nav">
+  <div class="wrap nav-in">
+    <div class="brand"><span class="dot"></span>Ghostrader</div>
+    <nav class="links" id="links">
+      <a href="#overview">Overview</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#workflow">Workflow</a>
+      <a href="#how">How it works</a>
+      <a href="#results">Results</a>
+      <a href="#usage">Usage</a>
+      <a class="btn btn-primary" href="https://github.com/stoxar06/ghostrader" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu">☰</button>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero plain">
+  <div class="wrap">
+    <span class="tag">● Indian equities · Zerodha Kite · free-first AI</span>
+    <h1>An <span class="u">honest</span> market<br/>analyst &amp; research toolkit.</h1>
+    <p class="lead">Ghostrader set out to be a 1%-a-day auto-trading bot. Instead it did something more valuable:
+      it rigorously <strong>proved there is no edge</strong> vs simply buying and holding — and became a
+      genuinely useful analysis tool, with <strong>zero rupees risked</strong> finding that out.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="#usage">Get started</a>
+      <a class="btn btn-ghost" href="#architecture">See the architecture</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="n">74</div><div class="l">tests passing — all offline &amp; deterministic</div></div>
+      <div class="stat"><div class="n">3</div><div class="l">layers: technical · macro-LLM · MCP</div></div>
+      <div class="stat"><div class="n">₹0</div><div class="l">capital risked — proven before deploying</div></div>
+      <div class="stat"><div class="n">~10%</div><div class="l">realistic Nifty index-SIP XIRR (what works)</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- OVERVIEW -->
+<section id="overview">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Overview</div>
+      <h2>What it is, and what it honestly is not</h2>
+      <p class="lead">A Python toolkit that analyzes Indian equities using technical signals and an AI macro engine,
+        backtests strategies with brutal honesty, and surfaces the result through a conversational MCP layer.</p>
+    </div>
+    <div class="grid g3">
+      <div class="card"><div class="ico">📈</div><h3>Technical engine</h3>
+        <p>Indicators + every candlestick pattern + multi-timeframe confluence + risk + a no-look-ahead backtest. Deterministic and fast — zero LLM tokens.</p></div>
+      <div class="card"><div class="ico">🧭</div><h3>Macro / AI engine</h3>
+        <p>FII/DII-style cues, global markets &amp; news → a market regime, via a free-first LLM router (Groq → Gemini → OpenRouter → Claude) with a daily cost cap.</p></div>
+      <div class="card"><div class="ico">💬</div><h3>MCP analyst</h3>
+        <p>Talk to the engine from Claude Desktop: ask for the briefing, a backtest, or the SIP XIRR of any stock — read-only, no trading.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- HONEST FINDING -->
+<section class="plain"><div class="wrap">
+  <div class="honest">
+    <div class="eyebrow" style="color:var(--clay)">The defining result</div>
+    <h2>No strategy beat buy-and-hold</h2>
+    <p class="lead">Across trend, mean-reversion, breakout, swing and the momentum factor — tested out-of-sample,
+      net of Zerodha costs — nothing produced a real risk-adjusted edge. The backtest gate did its job:
+      it stopped a losing system from ever touching real money.</p>
+    <div class="row">
+      <div><div class="k">5 / 5</div><div class="v">strategy archetypes tested → all no edge</div></div>
+      <div><div class="k">+71.5% vs +71,689%</div><div class="v">best swing strategy vs buy-and-hold (~28y)</div></div>
+      <div><div class="k">SIP &gt; trading</div><div class="v">disciplined investing won, decisively</div></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Architecture</div>
+      <h2>Three layers, one honest pipeline</h2>
+      <p class="lead">Free data flows into two independent engines — a fast deterministic one and a slow AI one —
+        which persist to SQLite and surface through reporting and an MCP server.</p>
+    </div>
+    <div class="arch">
+      <div class="layer">
+        <div class="lt">Free data sources</div>
+        <div class="ld">no paid feeds required</div>
+        <span class="badge">yfinance OHLC</span><span class="badge">global cues</span>
+        <span class="badge">RSS market news</span><span class="badge">NSE calendar</span>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="two">
+        <div class="layer accent-l">
+          <div class="lt">Technical engine</div>
+          <div class="ld">deterministic · fast · 0 tokens</div>
+          <span class="badge">indicators</span><span class="badge">candlesticks</span>
+          <span class="badge">confluence</span><span class="badge">risk</span>
+          <span class="badge">backtest + walk-forward</span>
+        </div>
+        <div class="layer">
+          <div class="lt">Macro / AI engine</div>
+          <div class="ld">slow · free-first LLM</div>
+          <span class="badge">cues + news</span><span class="badge">→ regime</span>
+          <span class="badge">Groq→Gemini→OpenRouter→Claude</span>
+          <span class="badge">daily ₹ cap</span>
+        </div>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="layer">
+        <div class="lt">Storage &amp; reporting</div>
+        <div class="ld">SQLite · scheduler · Telegram</div>
+        <span class="badge">trades / pnl / signals</span><span class="badge">regime cache</span>
+        <span class="badge">LLM usage / cost</span><span class="badge">daily briefing</span>
+      </div>
+      <div class="arrow">↓</div>
+      <div class="layer dark-l">
+        <div class="lt">MCP analyst server ⇄ you / Claude Desktop</div>
+        <div class="ld">read-only tools — analysis, never auto-trading</div>
+        <span class="badge">get_briefing</span><span class="badge">get_regime</span>
+        <span class="badge">run_backtest</span><span class="badge">sip_return</span>
+        <span class="badge">buy_and_hold_return</span><span class="badge">explain_last_trades</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WORKFLOW -->
+<section id="workflow">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Workflow</div>
+      <h2>The validation-first build</h2>
+      <p class="lead">Every step had to earn the next. The strategy never reached real money because the gate said no —
+        which is exactly the point.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><h4>Build engine</h4><p>Data, indicators, candlesticks, confluence &amp; risk — all unit-tested.</p></div>
+      <div class="step"><h4>Backtest gate</h4><p>Replay net of costs with no look-ahead. Go / no-go decision.</p></div>
+      <div class="step"><h4>Walk-forward</h4><p>Calibrate on train, judge on unseen test. Result: no edge.</p></div>
+      <div class="step"><h4>Sweep &amp; benchmark</h4><p>Trend, mean-rev, breakout, swing, momentum vs buy-and-hold.</p></div>
+      <div class="step"><h4>Pivot honestly</h4><p>Ship the analyst tool + SIP analyzer. Shelve live trading.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">How it works</div>
+      <h2>Two engines, by design</h2>
+    </div>
+    <div class="grid g2">
+      <div class="card">
+        <h3>Technical path</h3>
+        <p class="muted" style="margin-bottom:14px">On each completed bar — microseconds, no LLM:</p>
+        <ul class="clean">
+          <li>Compute indicators (EMA, RSI, ATR, VWAP, Supertrend…)</li>
+          <li>Detect candlestick patterns (engulfing, hammer…)</li>
+          <li>Each signal votes; votes are accuracy-weighted → a score</li>
+          <li>Higher-timeframe trend must agree to fire</li>
+          <li>Risk sizes the trade; ATR stop, target, trailing, daily halt</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Macro path</h3>
+        <p class="muted" style="margin-bottom:14px">Pre-market &amp; every ~15–30 min — slow, cheap:</p>
+        <ul class="clean">
+          <li>Pull global cues (yfinance) + market headlines (RSS)</li>
+          <li>Free-first router tries Groq → Gemini → OpenRouter, then Claude</li>
+          <li>Synthesizes a regime: risk-on / neutral / risk-off + bias</li>
+          <li>Falls back to a deterministic regime when no keys / over cap</li>
+          <li>Caches by input hash — no LLM call when nothing changed</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESULTS -->
+<section id="results">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">Research results</div>
+      <h2>The evidence, in full</h2>
+      <p class="lead">All net of costs and benchmarked against simply holding. Numbers from real runs on the bundled universe.</p>
+    </div>
+
+    <h3 style="margin-bottom:14px">Strategy sweep — every approach failed the gate</h3>
+    <div class="tbl-wrap" style="margin-bottom:36px">
+      <table>
+        <thead><tr><th>Strategy</th><th>Win&nbsp;%</th><th>Profit&nbsp;factor</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Trend — intraday (OOS)</td><td class="mono">24.8</td><td class="mono">0.45</td><td class="verdict-no">no edge</td></tr>
+          <tr><td>Mean-reversion — intraday</td><td class="mono">22.5</td><td class="mono">0.35</td><td class="verdict-no">no edge</td></tr>
+          <tr><td>Opening-range breakout</td><td class="mono">22.5</td><td class="mono">0.41</td><td class="verdict-no">no edge</td></tr>
+          <tr><td>Trend — swing (daily)</td><td class="mono">39.6</td><td class="mono">1.07</td><td class="verdict-no">≈ 1,000× worse than B&amp;H</td></tr>
+          <tr><td>Momentum factor</td><td class="mono">—</td><td class="mono">—</td><td class="verdict-no">higher return, worse Sharpe</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-bottom:14px">What actually works — disciplined investing</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Approach</th><th>Return</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td>Nifty 50 index SIP</td><td class="pos mono">~10.3% XIRR</td><td class="muted">realistic, survivorship-free benchmark</td></tr>
+          <tr><td>Quality-basket SIP</td><td class="pos mono">~24% XIRR</td><td class="muted">survivorship-biased (today's winners)</td></tr>
+          <tr><td>The trading bot</td><td class="neg mono">losses</td><td class="muted">every variant, after costs</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- USAGE -->
+<section id="usage">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="eyebrow">How to use it</div>
+      <h2>Run everything with one command</h2>
+      <p class="lead">Python 3.12. Free data works out of the box; LLM keys are optional (the briefing falls back to a deterministic regime).</p>
+    </div>
+
+    <div class="grid g2" style="align-items:start">
+      <div>
+        <h3 style="margin-bottom:12px">Setup</h3>
+        <div class="code"><button class="copy">Copy</button><span class="c"># clone &amp; install</span>
+git clone https://github.com/stoxar06/ghostrader
+cd ghostrader
+python3 -m venv .venv &amp;&amp; <span class="k">source</span> .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env   <span class="c"># optional: add free LLM keys</span></div>
+
+        <h3 style="margin-bottom:12px">Commands</h3>
+        <div class="code"><button class="copy">Copy</button>python -m src            <span class="c"># list all commands</span>
+python -m src <span class="k">brief</span>      <span class="c"># market briefing</span>
+python -m src <span class="k">sip</span>        <span class="c"># SIP/buy-hold + Nifty benchmark</span>
+python -m src <span class="k">research</span>   <span class="c"># strategy sweep vs buy-and-hold</span>
+python -m src <span class="k">momentum</span>   <span class="c"># momentum factor test</span>
+python -m src <span class="k">backtest</span>   <span class="c"># single-pass backtest</span>
+python -m src <span class="k">walkforward</span><span class="c"># out-of-sample gate</span>
+python -m src <span class="k">serve</span>      <span class="c"># MCP server for Claude Desktop</span></div>
+      </div>
+
+      <div>
+        <h3 style="margin-bottom:12px">Talk to it from Claude Desktop</h3>
+        <p style="font-size:.95rem">Add the MCP server to Claude Desktop's config, then ask in plain English —
+          “what's the market regime?”, “SIP XIRR of TITAN?”, “backtest RELIANCE”.</p>
+        <div class="code"><button class="copy">Copy</button><span class="c">// claude_desktop_config.json</span>
+{
+  <span class="k">"mcpServers"</span>: {
+    <span class="k">"ghostrader"</span>: {
+      "command": ".venv/bin/python",
+      "args": ["-m", "src.mcp.server"],
+      "cwd": "/path/to/ghostrader"
+    }
+  }
+}</div>
+        <h3 style="margin:24px 0 12px">Configuration</h3>
+        <ul class="clean">
+          <li><span class="mono">config.yaml</span> — tunables: instruments, strategy, risk, costs, LLM order &amp; cap</li>
+          <li><span class="mono">.env</span> — secrets (gitignored): Kite, Groq, Gemini, OpenRouter, Anthropic, Telegram</li>
+          <li>Free-first: most days cost ~₹0; paid Claude only as a capped fallback</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="foot-row">
+      <div>
+        <h3 style="display:flex;align-items:center;gap:9px"><span class="brand" style="color:#fff">Ghostrader</span></h3>
+        <p class="foot-note">A market analyst &amp; research toolkit — not an auto-trader. Built validation-first,
+          it proved that simple technical strategies don't beat buy-and-hold on these names, and shipped the honest
+          tool that finding deserved.</p>
+        <p class="foot-note muted" style="color:#86837A">Educational research software. Not investment advice. Markets carry risk.</p>
+      </div>
+      <div class="foot-cols">
+        <div>
+          <b>Explore</b>
+          <a href="#architecture">Architecture</a>
+          <a href="#workflow">Workflow</a>
+          <a href="#results">Results</a>
+          <a href="#usage">Usage</a>
+        </div>
+        <div>
+          <b>Project</b>
+          <a href="https://github.com/stoxar06/ghostrader" target="_blank" rel="noopener">GitHub repo</a>
+          <a href="#how">How it works</a>
+          <a href="#overview">Overview</a>
+        </div>
+      </div>
+    </div>
+    <div class="copyline">© <span id="yr"></span> Ghostrader · Built with Python &amp; the Claude API · Design in the spirit of Anthropic's house style.</div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  // mobile menu
+  var mb = document.getElementById('menuBtn'), lk = document.getElementById('links');
+  mb && mb.addEventListener('click', function(){ lk.classList.toggle('open'); });
+  lk && lk.querySelectorAll('a').forEach(function(a){ a.addEventListener('click', function(){ lk.classList.remove('open'); }); });
+  // copy buttons
+  document.querySelectorAll('.copy').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var code = btn.parentElement.innerText.replace(/^Copy\s*/, '');
+      navigator.clipboard && navigator.clipboard.writeText(code).then(function(){
+        var t = btn.textContent; btn.textContent = 'Copied'; setTimeout(function(){ btn.textContent = t; }, 1400);
+      });
+    });
+  });
+</script>
+</body>
+</html>
