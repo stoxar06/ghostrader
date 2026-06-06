@@ -34,16 +34,32 @@ The scaffold (config, DB, logging) and tests run **without** TA-Lib.
 
 ## Run
 ```bash
-pytest -q                                 # unit/smoke tests
-# Later phases:
-# python -m src.backtest.engine           # backtest (no API key needed)
-# python -m src.runner                    # paper trading (needs Kite key)
+pytest -q                                 # 59 tests (all offline, deterministic)
+
+# Backtest gate (free data, no API key):
+python -m src.backtest.engine             # single-pass basket backtest
+python -m src.backtest.walkforward        # walk-forward out-of-sample gate
+python -m src.backtest.research           # multi-strategy sweep vs buy-and-hold
+
+# Analyst tool (free data; LLM optional):
+python -m src.macro.brief                 # daily market briefing
+python -m src.mcp.server                  # MCP server (for Claude Desktop etc.)
 ```
 
 ## Config
 - **Secrets** → `.env` (gitignored). **Tunables** → `config.yaml`.
-- Start in `mode: paper`. Live is gated behind ≥100 paper trades over ~2–3 months.
+- The briefing runs with **zero keys** (deterministic regime). Add free
+  `GROQ_API_KEY` / `GEMINI_API_KEY` / `OPENROUTER_API_KEY` for LLM synthesis;
+  `ANTHROPIC_API_KEY` is the paid fallback under a daily INR cap.
 
-## Status
-Phase 1 (scaffold & config) complete. See `~/.claude/plans/` for the full build plan and
-the 8-phase roadmap.
+## Status & honest findings
+Built & tested: data layer, indicators + candlestick patterns, confluence strategy,
+risk, backtest + walk-forward gate, free-first multi-LLM router, macro engine, daily
+briefing, and the MCP analyst server.
+
+**The auto-trading thesis was tested and failed the gate.** Across trend, mean-reversion,
+breakout (intraday) and swing (daily), no approach beat buy-and-hold after costs (e.g.
+swing made +71.5% vs buy-and-hold +71,689% over ~28y). **Conclusion: do not deploy the
+auto-trader.** The project is therefore an **analyst/decision tool**, not a trading bot.
+Live/paper trading (Phases 5/8) are intentionally NOT pursued — they would deploy a
+no-edge strategy. The infrastructure remains ready for a genuinely better strategy/data.
