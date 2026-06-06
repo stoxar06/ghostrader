@@ -17,9 +17,10 @@ env/
 .mypy_cache/
 .ruff_cache/
 
-# Data, logs, databases (runtime artifacts)
-data/
-logs/
+# Data, logs, databases (runtime artifacts) — anchored to repo root so they
+# do NOT match source packages like src/data/.
+/data/
+/logs/
 *.db
 *.sqlite
 *.sqlite3
