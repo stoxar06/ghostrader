@@ -47,7 +47,10 @@ class YFinanceProvider:
         self.suffix = suffix
 
     def _ticker(self, symbol: str) -> str:
-        return symbol if "." in symbol else f"{symbol}{self.suffix}"
+        # Leave indices (^NSEI) and already-qualified tickers (with a dot) untouched.
+        if "." in symbol or symbol.startswith("^"):
+            return symbol
+        return f"{symbol}{self.suffix}"
 
     def fetch(self, symbol, interval, start=None, end=None, period=None) -> pd.DataFrame:
         # Validate the interval BEFORE importing yfinance so callers/tests fail fast.

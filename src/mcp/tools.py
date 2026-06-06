@@ -97,3 +97,21 @@ def explain_last_trades(n: int = 5) -> list[dict]:
              "exit": r.exit_price, "pnl": r.pnl, "reason": r.reason, "mode": r.mode}
             for r in rows
         ]
+
+
+def sip_tool(symbol: str, monthly_amount: float = 10_000.0, timeframe: str = "day") -> dict:
+    """SIP return (invested, final value, XIRR) for a monthly SIP in `symbol`."""
+    from src.data.historical import HistoricalData
+    from src.invest.analyzer import sip
+
+    px = HistoricalData(cache_dir="data/cache").get(symbol, timeframe)["close"]
+    return sip(px, monthly_amount)
+
+
+def lumpsum_tool(symbol: str, timeframe: str = "day") -> dict:
+    """Buy-and-hold return (total %, CAGR) for `symbol` over its available history."""
+    from src.data.historical import HistoricalData
+    from src.invest.analyzer import lumpsum
+
+    px = HistoricalData(cache_dir="data/cache").get(symbol, timeframe)["close"]
+    return lumpsum(px)

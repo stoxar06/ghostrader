@@ -127,6 +127,16 @@ def _main() -> None:  # pragma: no cover - CLI, needs network
         table.add_row(sym, f"{x:.1f}", f"{c:.1f}", f"{y}")
     con.print(table)
 
+    # Realistic, survivorship-free benchmark: Nifty 50 index SIP.
+    try:
+        nifty = hist.get("^NSEI", "day")["close"]
+        ns = sip(nifty, monthly)
+        con.print(f"[bold]NIFTY 50 index SIP (realistic, no survivorship bias)[/bold]: "
+                  f"XIRR {ns['xirr_pct']:.1f}%  "
+                  f"(₹{ns['invested']:,.0f} -> ₹{ns['final_value']:,.0f} over {ns['months']} months)")
+    except Exception as exc:  # noqa: BLE001
+        con.print(f"[yellow]Nifty benchmark unavailable: {exc}[/yellow]")
+
     if port_cashflows:
         final = sum(port_units[s] * last_price[s] for s in port_units)
         cfs = sorted(port_cashflows.items())

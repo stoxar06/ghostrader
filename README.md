@@ -34,17 +34,17 @@ The scaffold (config, DB, logging) and tests run **without** TA-Lib.
 
 ## Run
 ```bash
-pytest -q                                 # 59 tests (all offline, deterministic)
+pytest -q                          # 74 tests, all offline & deterministic
 
-# Backtest gate (free data, no API key):
-python -m src.backtest.engine             # single-pass basket backtest
-python -m src.backtest.walkforward        # walk-forward out-of-sample gate
-python -m src.backtest.research           # multi-strategy sweep vs buy-and-hold
-
-# Analyst tool (free data; LLM optional):
-python -m src.macro.brief                 # one-off daily market briefing
-python -m src.scheduler                   # auto briefing pre-market + intraday (+Telegram)
-python -m src.mcp.server                  # MCP server (for Claude Desktop etc.)
+python -m src                      # list every command
+python -m src brief                # market briefing (cues + news + regime)
+python -m src sip                  # SIP/buy-hold analyzer (XIRR) + realistic Nifty benchmark
+python -m src research             # strategy sweep vs buy-and-hold (proves no edge)
+python -m src momentum             # momentum factor vs buy-and-hold
+python -m src backtest             # single-pass backtest (net of costs)
+python -m src walkforward          # out-of-sample gate
+python -m src schedule             # auto briefing pre-market + intraday (+Telegram)
+python -m src serve                # MCP analyst server (Claude Desktop)
 ```
 
 ## Config

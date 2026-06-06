@@ -53,6 +53,16 @@ def build_server():
         """The last N trades with entry, exit, P&L, and the reason for each."""
         return tools.explain_last_trades(n)
 
+    @mcp.tool()
+    def sip_return(symbol: str, monthly_amount: float = 10000.0) -> dict:
+        """SIP return (invested, final value, XIRR) for a monthly SIP in a stock or index (e.g. ^NSEI)."""
+        return tools.sip_tool(symbol, monthly_amount)
+
+    @mcp.tool()
+    def buy_and_hold_return(symbol: str) -> dict:
+        """Buy-and-hold total return and CAGR for a stock or index over its history."""
+        return tools.lumpsum_tool(symbol)
+
     return mcp
 
 
