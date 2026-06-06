@@ -76,12 +76,19 @@ def run_backtest(
     symbol: str = "?",
     htf_df: pd.DataFrame | None = None,
     use_trailing: bool = True,
+    signals: pd.DataFrame | None = None,
+    square_off_eod: bool = True,
 ) -> pd.DataFrame:
-    """Replay `df` and return a trades DataFrame (net of costs + slippage)."""
+    """Replay `df` and return a trades DataFrame (net of costs + slippage).
+
+    `signals` (optional) lets any strategy plug in: a DataFrame aligned to df with
+    boolean `entered` and int `direction` columns. If None, the confluence
+    strategy is used.
+    """
     if len(df) < 3:
         return pd.DataFrame()
 
-    result = confluence.analyze(df, strategy_cfg, weights, htf_df)
+    result = signals if signals is not None else confluence.analyze(df, strategy_cfg, weights, htf_df)
     df_ind = ind.compute_indicators(df, strategy_cfg.get("indicator_params", {}) or {})
 
     opens = df["open"].to_numpy()
@@ -125,8 +132,10 @@ def run_backtest(
                 elif lows[i] <= pos["target"]:
                     exit_price, reason = pos["target"], "target"
 
-            if exit_price is None and session_end(i):
+            if exit_price is None and square_off_eod and session_end(i):
                 exit_price, reason = closes[i], "square_off"
+            if exit_price is None and i == n - 1:  # close any open position at end of data
+                exit_price, reason = closes[i], "end_of_data"
 
             if exit_price is not None:
                 fill = exit_price * (1 - slip) if pos["dir"] > 0 else exit_price * (1 + slip)
@@ -153,7 +162,8 @@ def run_backtest(
                 pos["stop"] = trailing_stop(closes[i], atr_arr[i], pos["dir"], pos["stop"], risk_params)
 
         # 2) Open a new position at this bar's open, using the prior bar's signal.
-        if pos is None and i > 0 and entered[i - 1] and rm.can_open() and not session_end(i):
+        block_eod = square_off_eod and session_end(i)
+        if pos is None and 0 < i < n - 1 and entered[i - 1] and rm.can_open() and not block_eod:
             d = int(direction[i - 1])
             atr_val = atr_arr[i - 1]
             if d != 0 and atr_val > 0:
