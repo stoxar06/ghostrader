@@ -44,9 +44,14 @@ python -m src research             # strategy sweep vs buy-and-hold (proves no e
 python -m src momentum             # momentum factor vs buy-and-hold
 python -m src backtest             # single-pass backtest (net of costs)
 python -m src walkforward          # out-of-sample gate
+python -m src paper                # PAPER trading sim on recent data (no real money)
 python -m src schedule             # auto briefing pre-market + intraday (+Telegram)
 python -m src serve                # MCP analyst server (Claude Desktop)
 ```
+
+> ⚠️ **Live trading is built but OFF by default.** `config.yaml → live.allow_live_orders`
+> defaults to `false`. The strategy has no proven edge, so real-money trading is expected
+> to lose; paper mode is the safe, recommended path.
 
 ## Config
 - **Secrets** → `.env` (gitignored). **Tunables** → `config.yaml`.
