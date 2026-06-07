@@ -83,3 +83,11 @@ def test_full_confluence_is_stricter():
     base = confluence.analyze(df, CFG)["entered"].sum()
     strict = confluence.analyze(df, dict(CFG, full_confluence=True))["entered"].sum()
     assert strict <= base
+
+
+def test_invert_flips_direction_only():
+    df = rising_df()
+    normal = confluence.analyze(df, CFG)
+    inv = confluence.analyze(df, dict(CFG, invert=True))
+    assert (inv["direction"] == -normal["direction"]).all()        # opposite direction
+    assert (inv["entered"] == normal["entered"]).all()             # same bars traded

@@ -117,6 +117,9 @@ def analyze(
         in_window = pd.Series([start <= d.time() <= end for d in base_df.index], index=base_df.index)
         entered = entered & in_window
 
+    if strategy_cfg.get("invert", False):  # trade the OPPOSITE of every signal
+        direction = -direction
+
     out = pd.DataFrame(
         {
             "score": score,
