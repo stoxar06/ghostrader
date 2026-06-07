@@ -28,6 +28,10 @@ strategy:
     volatility: [atr]       # ATR always used for stops
   confidence_threshold: 0.6
   require_higher_tf_agreement: true
+  # --- cost-aware filters (cut fee drag; do not create an edge) ---
+  min_atr_pct: 0.15                          # skip bars whose ATR < 0.15% (move can't clear costs)
+  trade_window: {start: "09:45", end: "15:00"}   # avoid open/close microstructure noise
+  full_confluence: false                     # true = require unanimous signal agreement
   indicator_params:
     ema_fast: 9
     ema_slow: 21

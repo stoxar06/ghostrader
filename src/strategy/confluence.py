@@ -8,6 +8,7 @@ Candlestick patterns confirm — they never trade alone (they're just more votes
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import time as dtime
 
 import numpy as np
 import pandas as pd
@@ -15,6 +16,11 @@ import pandas as pd
 from src.indicators import engine, patterns
 from src.indicators.accuracy import AccuracyWeights
 from src.strategy import mtf
+
+
+def _parse_time(s: str) -> dtime:
+    h, m = str(s).split(":")
+    return dtime(int(h), int(m))
 
 
 @dataclass
@@ -95,6 +101,21 @@ def analyze(
         htf_trend = mtf.htf_trend(htf_df, params).shift(1)
         htf_dir = mtf.align_to_base(htf_trend, base_df.index)
         entered = entered & (direction == htf_dir) & (direction != 0)
+
+    # --- Optional quality/cost filters (defaults are no-ops) ---
+    if strategy_cfg.get("full_confluence", False):
+        entered = entered & (confidence >= 0.999)  # require unanimous votes
+
+    min_atr_pct = float(strategy_cfg.get("min_atr_pct", 0.0) or 0.0)
+    if min_atr_pct > 0:  # skip dead/choppy bars where round-trip costs dominate the move
+        atr_pct = (df_ind["atr"] / base_df["close"]).fillna(0.0) * 100.0
+        entered = entered & (atr_pct >= min_atr_pct)
+
+    win = strategy_cfg.get("trade_window")
+    if win and isinstance(base_df.index, pd.DatetimeIndex):
+        start, end = _parse_time(win.get("start", "00:00")), _parse_time(win.get("end", "23:59"))
+        in_window = pd.Series([start <= d.time() <= end for d in base_df.index], index=base_df.index)
+        entered = entered & in_window
 
     out = pd.DataFrame(
         {

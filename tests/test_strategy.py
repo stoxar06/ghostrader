@@ -62,3 +62,24 @@ def test_latest_signal_helper():
     assert sig.direction == 1
     assert sig.entered is True
     assert "ema_cross" in sig.votes
+
+
+def test_volatility_gate_reduces_entries():
+    df = rising_df()
+    base = confluence.analyze(df, CFG)["entered"].sum()
+    cfg = dict(CFG, min_atr_pct=100.0)  # absurdly high ATR% -> nothing qualifies
+    gated = confluence.analyze(df, cfg)["entered"].sum()
+    assert gated < base
+    assert gated == 0
+
+
+def test_trade_window_filters_out_of_window_bars():
+    cfg = dict(CFG, trade_window={"start": "00:00", "end": "00:01"})  # excludes all 09:15+ bars
+    assert confluence.analyze(rising_df(), cfg)["entered"].sum() == 0
+
+
+def test_full_confluence_is_stricter():
+    df = rising_df()
+    base = confluence.analyze(df, CFG)["entered"].sum()
+    strict = confluence.analyze(df, dict(CFG, full_confluence=True))["entered"].sum()
+    assert strict <= base
