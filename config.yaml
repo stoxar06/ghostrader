@@ -84,6 +84,14 @@ llm:
     openrouter: "meta-llama/llama-3.3-70b-instruct:free"
     anthropic: claude-sonnet-4-6
 
+# ── Live trading (SAFETY-GATED) ───────────────────────────────────────
+# The strategy has NO proven edge (it loses to buy-and-hold). Real orders are
+# OFF by default. Paper trading is always safe. Live needs a paid Kite subscription.
+live:
+  allow_live_orders: false      # keep false — true places REAL orders
+  product: MIS                  # MIS=intraday · CNC=delivery · NRML=F&O carry
+  exchange: NSE
+
 # ── Storage / logging ─────────────────────────────────────────────────
 storage:
   db_path: data/ghostrader.db
