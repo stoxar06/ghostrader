@@ -1,8 +1,9 @@
 """Honest research sweep — test several strategy archetypes through the gate.
 
+`sweep()` returns the metrics dict (reused by the web dashboard); `main()` prints it.
 Fixed-rule strategies (mean-reversion, ORB, equal-weight trend) are evaluated
-full-period (no fitting = no overfitting). The calibrated trend strategy uses
-walk-forward OOS. Prints a side-by-side comparison with a blunt verdict.
+full-period (no fitting = no overfitting); the calibrated trend strategy uses
+walk-forward OOS.
 """
 from __future__ import annotations
 
@@ -23,10 +24,8 @@ def _agg(frames) -> pd.DataFrame:
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
-def main() -> None:  # pragma: no cover - CLI, needs network
-    from rich.console import Console
-    from rich.table import Table
-
+def sweep() -> dict[str, dict]:
+    """Run all strategy archetypes on the configured basket; return {name: metrics}."""
     from src.config import get_config
     from src.data.historical import HistoricalData
 
@@ -50,33 +49,32 @@ def main() -> None:  # pragma: no cover - CLI, needs network
         except Exception as exc:  # noqa: BLE001
             log.warning("fetch failed for %s: %s", sym, exc)
 
-    rows: dict[str, dict] = {}
     mr_cfg = {"indicator_params": params}
-
-    # 1) Trend intraday — calibrated, walk-forward out-of-sample.
+    rows: dict[str, dict] = {}
     rows["trend_intraday_wf_oos"] = compute_metrics(
         _agg([walk_forward(df, strat, rp, costs, htf_df=htf_data.get(s), symbol=s)
               for s, df in base_data.items()]), rp.capital)
-
-    # 2) Mean-reversion intraday — fade extremes (fixed rules).
     rows["mean_reversion_intraday"] = compute_metrics(
         _agg([run_backtest(df, mr_cfg, rp, costs, symbol=s,
                            signals=alt.mean_reversion_signals(df, params))
               for s, df in base_data.items()]), rp.capital)
-
-    # 3) Opening-range breakout intraday (fixed rules).
     rows["orb_intraday"] = compute_metrics(
         _agg([run_backtest(df, mr_cfg, rp, costs, symbol=s,
                            signals=alt.opening_range_breakout_signals(df, params))
               for s, df in base_data.items()]), rp.capital)
-
-    # 4) Trend swing on daily bars — equal-weight confluence, holds across days.
     swing_cfg = dict(strat)
     swing_cfg["require_higher_tf_agreement"] = False
     rows["trend_swing_daily"] = compute_metrics(
         _agg([run_backtest(df, swing_cfg, rp, costs, symbol=s, square_off_eod=False)
               for s, df in daily_data.items()]), rp.capital)
+    return rows
 
+
+def main() -> None:  # pragma: no cover - CLI, needs network
+    from rich.console import Console
+    from rich.table import Table
+
+    rows = sweep()
     table = Table(title="Strategy research sweep (net of costs)")
     table.add_column("strategy")
     for k in ("trades", "win%", "expectancy", "total_pnl", "PF", "maxDD%", "return%", "sharpe", "verdict"):

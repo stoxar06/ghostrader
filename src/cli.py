@@ -18,6 +18,7 @@ COMMANDS = {
     "research": ("src.backtest.research", "main"),
     "momentum": ("src.backtest.momentum", "_main"),
     "sip": ("src.invest.analyzer", "_main"),
+    "web": ("src.web.server", "_main"),
 }
 
 DESCRIPTIONS = {
@@ -29,6 +30,7 @@ DESCRIPTIONS = {
     "research": "Multi-strategy sweep vs buy-and-hold.",
     "momentum": "Cross-sectional momentum factor vs buy-and-hold.",
     "sip": "SIP / buy-and-hold analyzer (XIRR, CAGR) incl. Nifty benchmark.",
+    "web": "Launch the local web dashboard (http://127.0.0.1:5000).",
 }
 
 
