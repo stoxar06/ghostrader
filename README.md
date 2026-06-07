@@ -37,6 +37,7 @@ The scaffold (config, DB, logging) and tests run **without** TA-Lib.
 pytest -q                          # 74 tests, all offline & deterministic
 
 python -m src                      # list every command
+python -m src web                  # 🖥️  web dashboard at http://127.0.0.1:5000
 python -m src brief                # market briefing (cues + news + regime)
 python -m src sip                  # SIP/buy-hold analyzer (XIRR) + realistic Nifty benchmark
 python -m src research             # strategy sweep vs buy-and-hold (proves no edge)
