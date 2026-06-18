@@ -34,6 +34,17 @@ def test_paper_stop_is_loss():
     assert r and r["reason"] == "stop" and r["pnl"] < 0
 
 
+def test_daily_limits_reset_on_new_bar_date():
+    b = PaperBroker(RiskParams(capital=100_000, risk_per_trade_pct=0.5,
+                               daily_loss_halt_pct=0.4), Costs())
+    b.open("X", 1, ref_price=100.0, atr=2.0, ts=NOW)
+    r = b.on_bar("X", high=100.5, low=50.0, close=60.0, ts=NOW)        # stopped: ~-0.5%
+    assert r["reason"] == "stop"
+    assert not b.can_open("X")                                          # halt engaged today
+    b.on_bar("X", high=61.0, low=59.0, close=60.0, ts=NOW.replace(day=2))
+    assert b.can_open("X")                                              # new day clears it
+
+
 def test_paper_persists_trade(tmp_path):
     from src.storage.db import Trade, get_session, init_db
 

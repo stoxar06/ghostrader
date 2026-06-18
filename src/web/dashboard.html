@@ -95,6 +95,7 @@
     <nav class="tabs">
       <a href="#briefing">Briefing</a>
       <a href="#invest">Invest</a>
+      <a href="#screener">Screener</a>
       <a href="#research">Research</a>
       <a href="#backtest">Backtest</a>
       <a href="#system">System</a>
@@ -161,6 +162,21 @@
         <canvas id="priceChart" height="110" style="margin-top:14px"></canvas>
       </div>
     </div>
+  </section>
+
+  <!-- SCREENER -->
+  <section id="screener">
+    <div class="sec-head">
+      <div><div class="eyebrow">Positioning, not predictions</div><h2>Stock screener</h2></div>
+      <button class="btn primary" onclick="loadScreener()">Load screener</button>
+    </div>
+    <div class="note">Gain/loss plus trend, drawdown from the 52-week high, RSI and a descriptive
+      <b>setup</b> tag — grouped by large / mid / small cap, best 1-year performers first. These are
+      snapshots of what each chart is doing <em>now</em>, <b>not</b> buy/sell signals: this engine has
+      shown no per-trade edge (run <span class="mono">reality</span>). Mid &amp; small caps fetch live on
+      first load (a few seconds); cap buckets are indicative and drift over time.</div>
+    <div id="scrState" class="state" style="margin-top:14px">Click “Load screener”.</div>
+    <div id="scrBox" style="display:none;margin-top:14px"></div>
   </section>
 
   <!-- RESEARCH -->
@@ -303,6 +319,43 @@ function drawChart(dates, close, sym){
   const ctx=$('priceChart'); if(chart) chart.destroy();
   chart=new Chart(ctx,{type:'line',data:{labels:dates,datasets:[{label:sym+' close',data:close,borderColor:'#CC785C',backgroundColor:'rgba(204,120,92,.10)',fill:true,pointRadius:0,borderWidth:1.5,tension:.15}]},
     options:{plugins:{legend:{display:false}},scales:{x:{ticks:{maxTicksLimit:6,color:'#76736A'},grid:{display:false}},y:{ticks:{color:'#76736A'},grid:{color:'#E4E0D4'}}}}});
+}
+
+// ---- screener ----
+async function loadScreener(){
+  $('scrState').style.display=''; $('scrBox').style.display='none';
+  $('scrState').innerHTML='<span class="spin"></span> screening large / mid / small caps (mid &amp; small fetch live)…';
+  try{
+    const r = await api('/api/screener');
+    let html='';
+    for(const cat of ['large','mid','small']){
+      const b = r.categories && r.categories[cat]; if(!b) continue;
+      html += '<div class="card" style="margin-bottom:16px"><h3>'+b.label+
+        ' <span class="muted" style="font-size:.8rem;font-weight:400">'+
+        '<span class="up">'+b.gainers+' up</span> / <span class="down">'+b.losers+' down</span></span></h3>';
+      if(!b.rows.length){ html += '<div class="state">no data (offline or uncached).</div></div>'; continue; }
+      html += '<div class="tbl-wrap"><table><thead><tr>'+
+        ['stock','price','1m','6m','1y','from 52w-high','trend','RSI','setup'].map(c=>'<th>'+c+'</th>').join('')+
+        '</tr></thead><tbody>';
+      for(const s of b.rows){
+        const col=v=>'<td class="mono '+(v>=0?'pos':'neg')+'">'+(v>=0?'+':'')+Number(v).toFixed(1)+'</td>';
+        html += '<tr><td><b>'+escapeHtml(s.symbol.replace('.NS',''))+'</b></td>'+
+          '<td class="mono">'+Number(s.price).toFixed(0)+'</td>'+
+          col(s.ret_1m)+col(s.ret_6m)+col(s.ret_1y)+
+          '<td class="mono">'+Number(s.from_high_pct).toFixed(0)+'%</td>'+
+          '<td><span class="badge '+(s.trend_up?'b-on':'b-off')+'">'+(s.trend_up?'up':'down')+'</span></td>'+
+          '<td class="mono">'+Number(s.rsi).toFixed(0)+'</td>'+
+          '<td>'+escapeHtml(s.setup)+'</td></tr>';
+      }
+      html += '</tbody></table></div></div>';
+    }
+    if(r.setup_legend){
+      html += '<div class="muted" style="font-size:.82rem;margin-top:4px">Setup tags — '+
+        Object.entries(r.setup_legend).map(([k,v])=>'<b>'+escapeHtml(k)+'</b>: '+escapeHtml(v)).join(' · ')+'</div>';
+    }
+    $('scrBox').innerHTML = html || '<div class="state">no data.</div>';
+    $('scrState').style.display='none'; $('scrBox').style.display='';
+  }catch(e){ $('scrState').innerHTML='<span class="err">'+e.message+'</span>'; }
 }
 
 // ---- research ----

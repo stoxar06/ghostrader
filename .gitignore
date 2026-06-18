@@ -21,6 +21,7 @@ env/
 # do NOT match source packages like src/data/.
 /data/
 /logs/
+/vault/
 *.db
 *.sqlite
 *.sqlite3

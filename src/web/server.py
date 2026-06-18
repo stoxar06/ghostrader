@@ -67,6 +67,44 @@ def create_app(init_db_path: str | None = None):
         from src.mcp import tools
         return jsonify(tools.get_briefing())
 
+    @app.get("/api/indicator_accuracy")
+    def indicator_accuracy():
+        from src.backtest import indicator_accuracy as ia
+        horizon = int(request.args.get("horizon", 5))
+        tf = request.args.get("tf", "day")
+        return jsonify(ia.analyze_all(timeframe=tf, horizon=horizon))
+
+    @app.get("/api/horizon")
+    def horizon():
+        from src.backtest import horizon as hz
+        hmax = min(int(request.args.get("max_days", 12)), 30)
+        return jsonify(hz.analyze(timeframe=request.args.get("tf", "day"),
+                                  horizons=tuple(range(1, hmax + 1))))
+
+    @app.get("/api/reality")
+    def reality():
+        from src.backtest import reality as rc
+        return jsonify(rc.analyze(timeframe=request.args.get("tf", "day")))
+
+    @app.get("/api/screener")
+    def screener():
+        from src.invest import screener as sc
+        cats = request.args.get("cats")
+        categories = [c.strip() for c in cats.split(",")] if cats else None
+        return jsonify(sc.analyze(categories=categories, timeframe=request.args.get("tf", "day")))
+
+    @app.get("/api/news")
+    def news_feed():
+        from src.macro import news
+        return jsonify(news.fetch_news_items(limit=int(request.args.get("limit", 40))))
+
+    @app.get("/api/company_news")
+    def company_news():
+        from src.macro import news
+        syms = request.args.get("symbols")
+        symbols = [s.strip().upper() for s in syms.split(",")] if syms else None
+        return jsonify(news.fetch_company_news(symbols))
+
     @app.get("/api/prices")
     def prices():
         from src.data.historical import HistoricalData
@@ -127,7 +165,34 @@ def create_app(init_db_path: str | None = None):
     @app.get("/api/trades")
     def trades():
         from src.mcp import tools
-        return jsonify(tools.explain_last_trades(50))
+        days = request.args.get("days", type=int)
+        limit = request.args.get("limit", default=50, type=int)
+        return jsonify(tools.explain_last_trades(min(limit, 500), days))
+
+    @app.get("/api/edge")
+    def edge():
+        # Honest OOS results straight from the research artifacts (no recompute).
+        import json as _json
+        from pathlib import Path
+
+        from src.backtest import auto_search, edge_search
+
+        out = {"edge_archive": None, "auto_search": None}
+        p = Path(edge_search.ARCHIVE_PATH)
+        if p.exists():
+            out["edge_archive"] = _json.loads(p.read_text())
+        p = Path(auto_search.ARCHIVE_PATH)
+        if p.exists():
+            st = _json.loads(p.read_text())
+            out["auto_search"] = {
+                "generations": st.get("generations", 0),
+                "configs_tried": st.get("configs_tried", 0),
+                "suspects": len(st.get("suspects", [])),
+                "last_stop": st.get("last_stop", ""),
+                "hall_of_fame": st.get("hall_of_fame", [])[:10],
+                "verdict": auto_search.verdict(st),
+            }
+        return jsonify(out)
 
     @app.get("/api/llm_usage")
     def llm_usage():

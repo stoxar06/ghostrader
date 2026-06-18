@@ -23,14 +23,17 @@ log = get_logger(__name__)
 
 class PaperBroker:
     def __init__(self, risk_params: RiskParams, costs: Costs,
-                 session_factory=None, use_trailing: bool = True, mode: str = "paper"):
+                 session_factory=None, use_trailing: bool = True, mode: str = "paper",
+                 max_hold_bars: int | None = None):
         self.p = risk_params
         self.costs = costs
         self.session_factory = session_factory
         self.use_trailing = use_trailing
         self.mode = mode
+        self.max_hold_bars = max_hold_bars   # force-exit after this many bars held (None = off)
         self.rm = RiskManager(risk_params)
         self.positions: dict[str, dict] = {}
+        self._cur_day = None
 
     def can_open(self, symbol: str) -> bool:
         return symbol not in self.positions and self.rm.can_open()
@@ -46,7 +49,7 @@ class PaperBroker:
             return None
         self.positions[symbol] = {
             "dir": direction, "entry": fill, "stop": stop, "target": target,
-            "qty": qty, "atr": atr, "ts": ts,
+            "qty": qty, "atr": atr, "ts": ts, "bars": 0,
         }
         self.rm.register_open()
         log.info("[%s] OPEN %s %s qty=%d @%.2f stop=%.2f target=%.2f",
@@ -54,9 +57,18 @@ class PaperBroker:
         return self.positions[symbol]
 
     def on_bar(self, symbol, high, low, close, ts, force_exit=False):
+        # Day-scoped limits (loss halt, trade count) end with the bar's date. Without
+        # this, a replay treats the whole history as one "day" and the first symbol's
+        # halt silently blocks every later symbol in the session.
+        d = ts.date() if hasattr(ts, "date") else None
+        if d != self._cur_day:
+            self._cur_day = d
+            self.rm.reset_day()
+
         pos = self.positions.get(symbol)
         if not pos:
             return None
+        pos["bars"] += 1
 
         exit_price, reason = None, None
         if pos["dir"] > 0:
@@ -71,6 +83,8 @@ class PaperBroker:
                 exit_price, reason = pos["target"], "target"
         if exit_price is None and force_exit:
             exit_price, reason = close, "square_off"
+        if exit_price is None and self.max_hold_bars and pos["bars"] >= self.max_hold_bars:
+            exit_price, reason = close, "max_hold"
 
         if exit_price is None:
             if self.use_trailing:

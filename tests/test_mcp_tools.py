@@ -12,6 +12,7 @@ def test_daily_pnl_and_explain_last_trades(tmp_path):
     init_db(str(tmp_path / "mcp.db"))
     with get_session() as s:
         s.add(DailyPnL(day=date.today(), realized_pnl=123.0, trades_count=2, halted=False, mode="paper"))
+        s.add(DailyPnL(day=date(2024, 3, 12), realized_pnl=-50.0, trades_count=1, halted=False, mode="paper"))
         s.add(Trade(symbol="TCS", side="LONG", qty=5, entry_price=100.0, exit_price=101.5,
                     entry_time=datetime.now(), exit_time=datetime.now(), pnl=7.5,
                     mode="paper", reason="target"))
@@ -19,8 +20,9 @@ def test_daily_pnl_and_explain_last_trades(tmp_path):
 
     from src.mcp import tools
 
-    pnl = tools.get_daily_pnl(7)
-    assert len(pnl) == 1 and pnl[0]["realized_pnl"] == 123.0
+    pnl = tools.get_daily_pnl(7)  # most recent N *recorded* days, newest first —
+    assert len(pnl) == 2 and pnl[0]["realized_pnl"] == 123.0  # replay days count even if old
+    assert tools.get_daily_pnl(1) == pnl[:1]
 
     last = tools.explain_last_trades(5)
     assert len(last) == 1

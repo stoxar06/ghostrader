@@ -25,3 +25,22 @@ def test_orb_breaks_above_opening_range_in_uptrend():
     s = alt.opening_range_breakout_signals(make([100 + i for i in range(60)]), {"or_bars": 6})
     assert s["direction"].isin([-1, 0, 1]).all()
     assert (s["direction"] == 1).any()  # rising series breaks above the opening-range high
+
+
+def test_rsi_signal_shape_and_extremes():
+    s = alt.rsi_signals(make([100 - i for i in range(60)]))  # falling -> oversold
+    assert {"entered", "direction", "score", "confidence"}.issubset(s.columns)
+    assert s["direction"].isin([-1, 0, 1]).all()
+    assert (s["direction"] == 1).any()  # persistent decline drives RSI < 30 -> long
+    up = alt.rsi_signals(make([100 + i for i in range(60)]))  # rising -> overbought
+    assert (up["direction"] == -1).any()  # RSI > 70 -> short
+
+
+def test_pullback_in_trend_signal_shape():
+    import numpy as np
+    # Uptrend with periodic dips so the trend filter is up and RSI dips below 40.
+    base = np.linspace(100, 300, 320)
+    wobble = 8 * np.sin(np.arange(320) / 3.0)
+    s = alt.pullback_in_trend_signals(make(list(base + wobble)))
+    assert {"entered", "direction", "score", "confidence"}.issubset(s.columns)
+    assert s["direction"].isin([-1, 0, 1]).all()

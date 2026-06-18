@@ -45,7 +45,7 @@ def build_server():
 
     @mcp.tool()
     def get_daily_pnl(days: int = 5) -> list:
-        """Recent daily realized-P&L records from the database."""
+        """The most recent N recorded daily realized-P&L rows (replay days may be historical)."""
         return tools.get_daily_pnl(days)
 
     @mcp.tool()

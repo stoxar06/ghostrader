@@ -40,6 +40,38 @@ def mean_reversion_signals(df: pd.DataFrame, params: dict | None = None) -> pd.D
     return _frame(direction)
 
 
+def rsi_signals(df: pd.DataFrame, params: dict | None = None) -> pd.DataFrame:
+    """Standalone RSI mean-reversion: long when oversold (RSI < low),
+    short when overbought (RSI > high). No other filter — this isolates RSI's
+    own edge so its accuracy can be measured honestly."""
+    p = params or {}
+    rsi = engine.rsi(df["close"], p.get("rsi_period", 14))
+    rsi_low = p.get("rsi_low", 30)
+    rsi_high = p.get("rsi_high", 70)
+    direction = pd.Series(np.where(rsi < rsi_low, 1, np.where(rsi > rsi_high, -1, 0)), index=df.index)
+    return _frame(direction)
+
+
+def pullback_in_trend_signals(df: pd.DataFrame, params: dict | None = None) -> pd.DataFrame:
+    """'Pullback in trend' (the accuracy-page rule): combine a regime/trend filter
+    with RSI. Go long a dip *within an uptrend*, short a rip *within a downtrend*.
+
+    Trend = SMA(fast) vs SMA(slow) alignment with price; dip/rip = RSI past a
+    moderate threshold. This is the tradeable form of the selected confluence rule.
+    """
+    p = params or {}
+    close = df["close"]
+    sma_fast = engine.sma(close, p.get("trend_fast", 50))
+    sma_slow = engine.sma(close, p.get("trend_slow", 200))
+    rsi = engine.rsi(close, p.get("rsi_period", 14))
+    up = (close > sma_slow) & (sma_fast > sma_slow)
+    dn = (close < sma_slow) & (sma_fast < sma_slow)
+    long_cond = up & (rsi < p.get("rsi_dip", 40))
+    short_cond = dn & (rsi > p.get("rsi_rip", 60))
+    direction = pd.Series(np.where(long_cond, 1, np.where(short_cond, -1, 0)), index=df.index)
+    return _frame(direction)
+
+
 def opening_range_breakout_signals(df: pd.DataFrame, params: dict | None = None) -> pd.DataFrame:
     """Long on a break above the day's opening-range high, short below its low."""
     p = params or {}

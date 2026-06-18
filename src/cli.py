@@ -17,10 +17,24 @@ COMMANDS = {
     "walkforward": ("src.backtest.walkforward", "_main"),
     "research": ("src.backtest.research", "main"),
     "momentum": ("src.backtest.momentum", "_main"),
+    "rsi": ("src.backtest.rsi_accuracy", "_main"),
+    "indicators": ("src.backtest.indicator_accuracy", "_main"),
+    "volume": ("src.backtest.indicator_accuracy", "_main_volume"),
+    "confluence": ("src.backtest.indicator_accuracy", "_main_confluence"),
+    "horizon": ("src.backtest.horizon", "_main"),
+    "edgesearch": ("src.backtest.edge_search", "_main"),
+    "reality": ("src.backtest.reality", "_main"),
+    "vault": ("src.knowledge.vault", "_main"),
+    "evolve": ("src.backtest.auto_search", "_main"),
     "compare": ("src.backtest.compare", "main"),
     "sip": ("src.invest.analyzer", "_main"),
+    "screener": ("src.invest.screener", "_main"),
+    "learn": ("src.learn.pipeline", "_main"),
     "web": ("src.web.server", "_main"),
     "paper": ("src.runner", "main"),
+    "candidate": ("src.runner", "paper_candidate"),
+    "random": ("src.runner", "paper_random"),
+    "active": ("src.runner", "paper_active"),
 }
 
 DESCRIPTIONS = {
@@ -31,10 +45,24 @@ DESCRIPTIONS = {
     "walkforward": "Walk-forward out-of-sample backtest gate.",
     "research": "Multi-strategy sweep vs buy-and-hold.",
     "momentum": "Cross-sectional momentum factor vs buy-and-hold.",
+    "rsi": "RSI accuracy: directional hit-rate vs base rate + costed backtest.",
+    "indicators": "Directional accuracy of every indicator vs the base rate.",
+    "volume": "Measure how much volume confirmation changes indicator accuracy.",
+    "confluence": "Accuracy of multi-indicator + regime-conditioned rules vs base rate.",
+    "horizon": "1-12 day holding-horizon filter: daily profit/loss + totals, net of costs.",
+    "edgesearch": "Out-of-sample hunt for 60%+ accuracy configs; archives real-edge vs drift.",
+    "reality": "Overfitting audit of the sweep: PBO (CSCV) + Deflated Sharpe + multiple-testing edge.",
+    "vault": "Export findings to an Obsidian 'neuron' vault (auto-refresh stale notes; --deep recomputes).",
+    "evolve": "Self-improving config search (evolutionary, honest OOS fitness, resumes each run).",
     "compare": "Baseline vs tuned (cost-aware filters), walk-forward OOS.",
     "sip": "SIP / buy-and-hold analyzer (XIRR, CAGR) incl. Nifty benchmark.",
+    "screener": "Gain/loss + honest positioning (trend, drawdown, RSI) by large/mid/small cap.",
+    "learn": "Transcribe a strategy video (local Whisper) and HONESTLY test the claimed rules OOS. Use --text to skip transcription.",
     "web": "Launch the local web dashboard (http://127.0.0.1:5000).",
     "paper": "Run a PAPER trading simulation on recent data (no real money).",
+    "candidate": "PAPER-trade the unvalidated edgesearch candidate (RSI dip + SMA200 + volume), daily.",
+    "random": "PAPER-trade random coin-flip entries across the universe (zero-skill control).",
+    "active": "PAPER-trade an ACTIVE quota (>=5 random entries/day, risk caps raised) — more trades = more cost.",
 }
 
 
@@ -52,7 +80,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
-    args = parser.parse_args(argv)
+    # tolerate subcommand-specific flags (e.g. `vault --deep`): each subcommand reads
+    # its own options from sys.argv, so unknown args pass through rather than erroring.
+    args, _ = parser.parse_known_args(argv)
     if not args.command:
         parser.print_help()
         return 1

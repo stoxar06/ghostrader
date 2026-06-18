@@ -5,8 +5,6 @@ modules; DB tools read from the storage layer. All are READ-ONLY analysis.
 """
 from __future__ import annotations
 
-from datetime import date, timedelta
-
 from src.logutil import get_logger
 
 log = get_logger(__name__)
@@ -70,15 +68,15 @@ def run_backtest_tool(symbol: str, timeframe: str | None = None) -> dict:
 
 
 def get_daily_pnl(days: int = 5) -> list[dict]:
-    """Recent daily realized-P&L records from the database."""
+    """The most recent `days` recorded daily realized-P&L rows.
+
+    Recorded days, not calendar days: the paper sim replays historical bars, so
+    the latest rows can be older than today.
+    """
     from src.storage.db import DailyPnL, get_session
 
-    cutoff = date.today() - timedelta(days=days)
     with get_session() as s:
-        rows = (
-            s.query(DailyPnL).filter(DailyPnL.day >= cutoff)
-            .order_by(DailyPnL.day.desc()).all()
-        )
+        rows = s.query(DailyPnL).order_by(DailyPnL.day.desc()).limit(days).all()
         return [
             {"day": str(r.day), "realized_pnl": r.realized_pnl, "trades": r.trades_count,
              "halted": r.halted, "mode": r.mode}
@@ -86,15 +84,31 @@ def get_daily_pnl(days: int = 5) -> list[dict]:
         ]
 
 
-def explain_last_trades(n: int = 5) -> list[dict]:
-    """The last N trades with entry/exit/pnl/reason."""
+def explain_last_trades(n: int = 5, days: int | None = None) -> list[dict]:
+    """The last N trades with day/entry/exit/pnl/reason.
+
+    `days` keeps only trades whose exit falls in the last `days` *recorded* trading
+    days — anchored to the most recent exit in the DB, not to today, because paper
+    replays are historical and a calendar-today window would usually be empty.
+    """
+    from datetime import datetime, time, timedelta
+
     from src.storage.db import Trade, get_session
 
     with get_session() as s:
-        rows = s.query(Trade).order_by(Trade.id.desc()).limit(n).all()
+        q = s.query(Trade)
+        if days:
+            latest = (s.query(Trade.exit_time).filter(Trade.exit_time.is_not(None))
+                      .order_by(Trade.exit_time.desc()).limit(1).scalar())
+            if latest is None:
+                return []
+            cutoff = datetime.combine(latest.date() - timedelta(days=days - 1), time.min)
+            q = q.filter(Trade.exit_time >= cutoff)
+        rows = q.order_by(Trade.id.desc()).limit(n).all()
         return [
             {"symbol": r.symbol, "side": r.side, "qty": r.qty, "entry": r.entry_price,
-             "exit": r.exit_price, "pnl": r.pnl, "reason": r.reason, "mode": r.mode}
+             "exit": r.exit_price, "pnl": r.pnl, "reason": r.reason, "mode": r.mode,
+             "day": r.exit_time.date().isoformat() if r.exit_time else None}
             for r in rows
         ]
 
